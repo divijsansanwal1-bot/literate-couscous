@@ -172,6 +172,28 @@ textarea{font-family:var(--f-num);font-size:12px;min-height:110px;resize:vertica
   background:var(--ink);color:var(--surface);padding:10px 12px 10px 16px;border-radius:8px;display:flex;gap:14px;align-items:center;font-size:14px;transition:.25s;z-index:20;max-width:calc(100% - 32px)}
 .toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
 .toast button{border:0;background:transparent;color:var(--accent);font-weight:600;padding:4px 6px}
+/* tabs & sessions page */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs a{padding:10px 16px;color:var(--muted);text-decoration:none;font-weight:600;font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;gap:8px;align-items:center}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs a:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tabs .dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.page{display:grid;gap:20px;min-width:0}
+.clockface{font-size:clamp(44px,12vw,64px);line-height:1.1;font-weight:500;margin:2px 0 4px;letter-spacing:-.01em}
+.clockface.paused{color:var(--muted)}
+.rec{display:grid;gap:14px}
+.chk{display:flex;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}
+.chk input{width:auto}
+.tod{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.tod:last-child{border-bottom:0}
+.tod .tn{font-weight:600;font-size:14px}
+.tod .td{font-size:12px;color:var(--muted)}
+.tod .tv{font-size:14px;min-width:66px;text-align:right}
+.bar.soft>i{background:var(--accent-soft)}
+details.sect>summary{cursor:pointer;font-weight:600;font-size:14px}
+.sess .when{white-space:nowrap}
+.rowend{display:flex;justify-content:flex-end;margin-top:12px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -184,6 +206,12 @@ textarea{font-family:var(--f-num);font-size:12px;min-height:110px;resize:vertica
     <div class="deadline" id="deadline"></div>
   </header>
 
+  <nav class="tabs" aria-label="Pages">
+    <a href="#tracker" id="tabTracker" aria-current="page">Tracker</a>
+    <a href="#sessions" id="tabSessions" aria-current="false">Sessions<i class="dot" id="runDot" hidden title="A session is running"></i></a>
+  </nav>
+
+  <div class="page" id="pageTracker">
   <section class="panel hero" aria-label="Progress">
     <div class="count">
       <span class="big" id="total">0</span>
@@ -288,6 +316,66 @@ textarea{font-family:var(--f-num);font-size:12px;min-height:110px;resize:vertica
       <div class="row"><button class="btn danger" type="button" id="resetBtn">Erase all logged words</button></div>
     </div>
   </details>
+  </div>
+
+  <div class="page" id="pageSessions" hidden>
+    <div class="two">
+      <section class="panel">
+        <h2>Writing session</h2>
+        <div class="rec">
+          <div>
+            <div class="clockface num" id="sClock">00:00</div>
+            <div class="sub" id="sSub"></div>
+          </div>
+          <div class="row" id="recIdle"><button class="btn primary" type="button" id="sStart">Start session</button></div>
+          <div class="row" id="recRun" hidden>
+            <button class="btn" type="button" id="sPause">Pause</button>
+            <button class="btn primary" type="button" id="sFinish">Finish</button>
+            <button class="btn danger" type="button" id="sDiscard">Discard</button>
+          </div>
+          <form class="logform" id="recFinish" hidden autocomplete="off" style="margin-top:0">
+            <div class="field"><label for="fWords">Words written this session</label><input type="number" id="fWords" inputmode="numeric" placeholder="0" step="1" min="0"><div class="hint" id="fHint"></div></div>
+            <div class="field"><label for="fNote">Note (optional)</label><input type="text" id="fNote" placeholder="Chapter 3" maxlength="80"></div>
+            <label class="chk"><input type="checkbox" id="fAdd" checked> Also add these words to my manuscript total</label>
+            <div class="row"><button class="btn primary" type="submit">Save session</button><button class="btn" type="button" id="fBack">Keep writing</button></div>
+          </form>
+          <details class="sect" style="margin-top:4px">
+            <summary>Add a past session by hand</summary>
+            <form class="logform" id="manForm" autocomplete="off">
+              <div class="pair"><div class="field"><label for="mDate">Date</label><input type="date" id="mDate"></div><div class="field"><label for="mTime">Started at</label><input type="time" id="mTime"></div></div>
+              <div class="pair"><div class="field"><label for="mMin">Minutes written</label><input type="number" id="mMin" inputmode="numeric" placeholder="45" min="1" step="1"></div><div class="field"><label for="mWords">Words (optional)</label><input type="number" id="mWords" inputmode="numeric" placeholder="0" min="0" step="1"></div></div>
+              <div class="field"><label for="mNote">Note (optional)</label><input type="text" id="mNote" placeholder="Chapter 3" maxlength="80"></div>
+              <label class="chk"><input type="checkbox" id="mAdd" checked> Also add these words to my manuscript total</label>
+              <div class="row"><button class="btn primary" type="submit">Add session</button><span class="hint" id="mHint"></span></div>
+            </form>
+          </details>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Session stats</h2>
+        <div class="stats" id="sStats"></div>
+      </section>
+    </div>
+
+    <div class="two even">
+      <section class="panel">
+        <div class="charttitle"><h2>Time spent writing</h2><span class="label">Last 14 days</span></div>
+        <div class="chart" id="sessChart"></div>
+      </section>
+      <section class="panel">
+        <h2>Time of day</h2>
+        <div class="sub" id="todSub" style="margin:-6px 0 8px"></div>
+        <div id="todBox"></div>
+      </section>
+    </div>
+
+    <section class="panel">
+      <h2>Session log</h2>
+      <div class="hist" id="sessList"></div>
+      <div class="rowend"><button class="btn danger" type="button" id="sessReset">Erase session log</button></div>
+    </section>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button type="button" id="toastUndo">Undo</button></div>
@@ -318,8 +406,8 @@ const daysUntil=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
 
 function load(){
   try{const r=localStorage.getItem(KEY);if(r){const s=JSON.parse(r);
-    return {settings:Object.assign({},DEFAULTS,s.settings||{}),entries:Array.isArray(s.entries)?s.entries:[]}}}catch(e){}
-  return {settings:Object.assign({},DEFAULTS),entries:[]};
+    return {settings:Object.assign({},DEFAULTS,s.settings||{}),entries:Array.isArray(s.entries)?s.entries:[],sessions:Array.isArray(s.sessions)?s.sessions:[],running:(s.running&&s.running.start)?s.running:null}}}catch(e){}
+  return {settings:Object.assign({},DEFAULTS),entries:[],sessions:[],running:null};
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}}
 let state=load();
@@ -398,6 +486,8 @@ function render(){
   renderToday(m); renderStats(m); renderHint(m);
   drawCumulative(m); drawDaily(m);
   renderCalendar(m); renderMiles(m); renderHistory(m);
+  $('#runDot').hidden=!state.running;
+  if(page==='sessions')renderSessionsPage();
 }
 
 function renderToday(m){
@@ -630,7 +720,7 @@ $('#setForm').addEventListener('submit',ev=>{
 });
 
 /* data */
-const backup=()=>JSON.stringify({app:'quire',version:1,exported:new Date().toISOString(),settings:state.settings,entries:state.entries},null,1);
+const backup=()=>JSON.stringify({app:'quire',version:1,exported:new Date().toISOString(),settings:state.settings,entries:state.entries,sessions:state.sessions},null,1);
 $('#copyBtn').addEventListener('click',()=>{
   const txt=backup(), box=$('#dataBox'), h=$('#dataHint');
   const fallback=()=>{box.value=txt;box.focus();box.select();h.textContent='Backup is in the box and selected. Copy it from there.'};
@@ -646,8 +736,9 @@ $('#impBtn').addEventListener('click',()=>{
   if(!d||!Array.isArray(d.entries)){h.textContent='No word log found in that backup.';return}
   const entries=d.entries.filter(e=>e&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&Number.isFinite(+e.words)).map(e=>({id:e.id||uid(),date:e.date,words:Math.round(+e.words),note:String(e.note||'').slice(0,80),ts:+e.ts||0,kind:e.kind==='total'?'total':'session'}));
   const prev=JSON.parse(JSON.stringify(state));
-  state={settings:Object.assign({},DEFAULTS,state.settings,d.settings||{}),entries}; save(); fillSettings(); render();
-  h.textContent=`Imported ${entries.length} entr${entries.length===1?'y':'ies'}.`;
+  const sess=(Array.isArray(d.sessions)?d.sessions:[]).filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&Number.isFinite(+x.dur)).map(x=>({id:x.id||uid(),date:x.date,start:+x.start||0,dur:Math.max(0,Math.round(+x.dur)),words:Math.max(0,Math.round(+x.words||0)),note:String(x.note||'').slice(0,80),eid:x.eid||null}));
+  state={settings:Object.assign({},DEFAULTS,state.settings,d.settings||{}),entries,sessions:Array.isArray(d.sessions)?sess:state.sessions,running:state.running}; save(); fillSettings(); render();
+  h.textContent=`Imported ${entries.length} entr${entries.length===1?'y':'ies'}${Array.isArray(d.sessions)?` and ${sess.length} session${sess.length===1?'':'s'}`:''}.`;
   toast('Backup imported',()=>{state=prev;fillSettings()});
 });
 $('#resetBtn').addEventListener('click',ev=>{
@@ -657,12 +748,195 @@ $('#resetBtn').addEventListener('click',ev=>{
   toast('All logged words erased',()=>{state.entries=prev});
 });
 
+/* ---------- sessions page ---------- */
+const dur=s=>{s=Math.max(0,Math.round(s));if(s<60)return s+'s';const m=Math.round(s/60);if(m<60)return m+' min';const h=Math.floor(m/60),r=m%60;return h+'h'+(r?' '+r+'m':'')};
+const clock=s=>{s=Math.max(0,Math.floor(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),r=s%60;return (h?pad(h)+':':'')+pad(m)+':'+pad(r)};
+const hm=ts=>{const t=new Date(ts);return pad(t.getHours())+':'+pad(t.getMinutes())};
+const runElapsed=()=>{const r=state.running;if(!r)return 0;return Math.max(0,((r.pausedAt||Date.now())-r.start-r.paused)/1000)};
+const BUCKETS=[['Morning','5am–12pm'],['Afternoon','12–5pm'],['Evening','5–10pm'],['Night','10pm–5am']];
+const bucketOf=ts=>{const h=new Date(ts).getHours();return h>=5&&h<12?0:h>=12&&h<17?1:h>=17&&h<22?2:3};
+let tick=null,showAllSess=false,finishOpen=false,finishHold=false;
+
+function sessStats(){
+  const L=state.sessions,today=todayKey();
+  const n=L.length,secs=L.reduce((t,x)=>t+x.dur,0),words=L.reduce((t,x)=>t+x.words,0);
+  const timed=L.filter(x=>x.dur>=60);
+  const tSecs=timed.reduce((t,x)=>t+x.dur,0),tWords=timed.reduce((t,x)=>t+x.words,0);
+  const wpm=tSecs?tWords/(tSecs/60):0;
+  const days=new Set(L.map(x=>x.date)).size;
+  const longest=L.reduce((b,x)=>(!b||x.dur>b.dur)?x:b,null);
+  const paced=L.filter(x=>x.dur>=300&&x.words>0);
+  const best=paced.reduce((b,x)=>(!b||x.words/x.dur>b.words/b.dur)?x:b,null);
+  const todayL=L.filter(x=>x.date===today);
+  const wkDates=range(addDays(today,-6),today),wk=L.filter(x=>wkDates.includes(x.date));
+  const tod=BUCKETS.map(()=>({secs:0,words:0,n:0}));
+  timed.filter(x=>x.start>0).forEach(x=>{const b=tod[bucketOf(x.start)];b.secs+=x.dur;b.words+=x.words;b.n++});
+  return {n,secs,words,wpm,days,longest,best,
+    todaySecs:todayL.reduce((t,x)=>t+x.dur,0),todayN:todayL.length,
+    wkSecs:wk.reduce((t,x)=>t+x.dur,0),wkN:wk.length,tod};
+}
+
+function renderSessionsPage(){renderRecorder();renderSessStats();drawSessChart();renderTod();renderSessList();syncTick()}
+
+function renderRecorder(){
+  const r=state.running,paused=!!(r&&r.pausedAt);
+  $('#recIdle').hidden=!!r;
+  $('#recRun').hidden=!r||finishOpen;
+  $('#recFinish').hidden=!(r&&finishOpen);
+  $('#sClock').classList.toggle('paused',paused);
+  $('#sPause').textContent=paused?'Resume':'Pause';
+  $('#sClock').textContent=clock(runElapsed());
+  $('#sSub').textContent=!r?'Start the timer when you sit down to write. You can pause for breaks.'
+    :finishOpen?`Session length: ${dur(runElapsed())}. Add what you wrote.`
+    :paused?`Paused. Started at ${hm(r.start)}.`:`Writing since ${hm(r.start)}.`;
+}
+function syncTick(){
+  clearInterval(tick);tick=null;
+  if(page==='sessions'&&state.running&&!state.running.pausedAt)tick=setInterval(()=>{$('#sClock').textContent=clock(runElapsed())},1000);
+}
+
+function renderSessStats(){
+  const m=sessStats(),has=m.n>0;
+  const items=[
+    ['Sessions',has?String(m.n):'—',has?`On ${m.days} day${m.days===1?'':'s'}`:'None recorded yet'],
+    ['Total time',has?dur(m.secs):'—',has?`${dur(m.secs/m.days)} per writing day`:'Waiting for session one'],
+    ['Average session',has?dur(m.secs/m.n):'—',m.longest?`Longest was ${dur(m.longest.dur)}`:'Longest run of the pen'],
+    ['Writing speed',m.wpm?`${Math.round(m.wpm)} <small>words/min</small>`:'—',m.wpm?`About ${fmt(m.wpm*60)} words an hour`:'Needs a session with words'],
+    ['Words per session',has?fmt(m.words/m.n):'—',has?`${fmt(m.words)} words across all sessions`:'No words yet'],
+    ['Best pace',m.best?`${Math.round(m.best.words/(m.best.dur/60))} <small>words/min</small>`:'—',m.best?`${niceDay(m.best.date)} · ${dur(m.best.dur)}`:'Sessions over 5 minutes count'],
+    ['Today',dur(m.todaySecs),`${m.todayN} session${m.todayN===1?'':'s'} today`],
+    ['Last 7 days',dur(m.wkSecs),`${m.wkN} session${m.wkN===1?'':'s'} this week`]
+  ];
+  $('#sStats').innerHTML=items.map(i=>`<div class="stat"><span class="label">${i[0]}</span><span class="v">${i[1]}</span><span class="n">${i[2]}</span></div>`).join('');
+}
+
+function drawSessChart(){
+  const box=$('#sessChart');if(!box)return;
+  const W=Math.max(280,Math.round(box.clientWidth||640)),H=W<520?170:190;
+  const L=44,R=12,T=12,B=26,iw=W-L-R,ih=H-T-B;
+  const today=todayKey(),days=[];for(let i=13;i>=0;i--)days.push(addDays(today,-i));
+  const by={};state.sessions.forEach(x=>{by[x.date]=(by[x.date]||0)+x.dur/60});
+  let mx=30;days.forEach(k=>mx=Math.max(mx,by[k]||0));mx=Math.ceil(mx/30)*30;
+  const slot=iw/days.length,bw=Math.min(24,slot*.68),y=v=>T+ih-(v/mx)*ih;
+  let g='';
+  [0,mx/2,mx].forEach(v=>{const yy=y(v).toFixed(1);
+    g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="var(--line)"/><text x="${L-8}" y="${yy}" dy="4" text-anchor="end" font-family="var(--f-num)" font-size="11" fill="var(--faint)">${v?dur(v*60):'0'}</text>`});
+  days.forEach((k,i)=>{
+    const cx=L+slot*i+slot/2,v=by[k]||0;
+    if(v>0){const yy=y(v);g+=`<rect x="${(cx-bw/2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${(T+ih-yy).toFixed(1)}" rx="1.5" fill="var(--accent)"><title>${niceDay(k)}: ${dur(v*60)}</title></rect>`}
+    if(k===today)g+=`<circle cx="${cx.toFixed(1)}" cy="${(T+ih+7).toFixed(1)}" r="2.5" fill="var(--ink)"/>`;
+  });
+  const step=W<480?4:2;
+  days.forEach((k,i)=>{if(i%step===0||i===days.length-1)g+=`<text x="${(L+slot*i+slot/2).toFixed(1)}" y="${H-4}" text-anchor="${i===0?'start':i===days.length-1?'end':'middle'}" font-family="var(--f-num)" font-size="11" fill="var(--faint)">${nice(k)}</text>`});
+  box.innerHTML=svgEl(W,H,g);
+}
+
+function renderTod(){
+  const m=sessStats(),rows=m.tod.map(b=>b.secs?b.words/(b.secs/60):0),mx=Math.max(...rows,1);
+  let bi=-1;rows.forEach((v,i)=>{if(v>0&&(bi<0||v>rows[bi]))bi=i});
+  $('#todSub').textContent=bi<0?'Words per minute by the time of day you start. This fills in as you record timed sessions with words.'
+    :`Your fastest window is ${BUCKETS[bi][0].toLowerCase()}, at about ${Math.round(rows[bi])} words a minute (${m.tod[bi].n} session${m.tod[bi].n===1?'':'s'}).`;
+  $('#todBox').innerHTML=BUCKETS.map((b,i)=>`<div class="tod"><div><div class="tn">${b[0]}</div><div class="td">${b[1]}</div></div><div class="bar${i===bi?'':' soft'}"><i style="width:${rows[i]/mx*100}%"></i></div><span class="num tv">${m.tod[i].secs?Math.round(rows[i])+' wpm':'—'}</span></div>`).join('');
+}
+
+function renderSessList(){
+  const box=$('#sessList'),L=state.sessions;
+  $('#sessReset').hidden=!L.length;
+  if(!L.length){box.innerHTML='<div class="empty">No sessions yet. Start the timer above, or add one you did earlier.</div>';return}
+  const by={};L.forEach(x=>{(by[x.date]=by[x.date]||[]).push(x)});
+  const dates=Object.keys(by).sort().reverse(),shown=showAllSess?dates:dates.slice(0,8);
+  let html=shown.map(d=>{
+    const list=by[d].sort((a,b)=>(b.start||0)-(a.start||0)),secs=list.reduce((t,x)=>t+x.dur,0),w=list.reduce((t,x)=>t+x.words,0);
+    return `<div class="day"><div class="dayhead"><span class="dn">${niceDay(d)}</span><span class="dt">${dur(secs)} <small style="color:var(--muted);font-size:13px">· ${fmt(w)} words</small></span></div>`+
+      list.map(x=>{
+        const t=x.start?hm(x.start)+'–'+hm(x.start+x.dur*1000):'';
+        const pace=x.dur>=60&&x.words>0?Math.round(x.words/(x.dur/60))+' wpm':'';
+        const info=[dur(x.dur),pace,x.note].filter(Boolean).map(esc).join(' · ');
+        return `<div class="sess"><span class="num when">${t}</span><span class="note">${info}</span><span class="sw2">${fmt(x.words)}</span><button class="xbtn" type="button" data-sdel="${x.id}" aria-label="Delete this session">Delete</button></div>`}).join('')+`</div>`;
+  }).join('');
+  if(dates.length>8)html+=`<div class="more"><button class="btn" type="button" id="sMoreBtn">${showAllSess?'Show recent only':`Show all ${dates.length} days`}</button></div>`;
+  box.innerHTML=html;
+}
+
+function makeSession(o){
+  const s={id:uid(),date:o.date,start:o.start,dur:o.dur,words:o.words,note:o.note,eid:null};
+  let e=null;
+  if(o.add&&o.words>0){e={id:uid(),date:o.date,words:o.words,note:o.note||'Timed session',ts:o.start+o.dur*1000,kind:'session'};s.eid=e.id;state.entries.push(e)}
+  state.sessions.push(s);
+  return {s,e};
+}
+function sessToast(r,msg){toast(msg,()=>{state.sessions=state.sessions.filter(x=>x.id!==r.s.id);if(r.e)state.entries=state.entries.filter(x=>x.id!==r.e.id)})}
+
+$('#sStart').addEventListener('click',()=>{state.running={start:Date.now(),paused:0,pausedAt:null};finishOpen=false;save();render();renderSessionsPage()});
+$('#sPause').addEventListener('click',()=>{const r=state.running;if(!r)return;if(r.pausedAt){r.paused+=Date.now()-r.pausedAt;r.pausedAt=null}else r.pausedAt=Date.now();save();renderSessionsPage()});
+$('#sFinish').addEventListener('click',()=>{const r=state.running;if(!r)return;finishHold=!r.pausedAt;if(!r.pausedAt)r.pausedAt=Date.now();finishOpen=true;save();renderSessionsPage();$('#fWords').focus()});
+$('#fBack').addEventListener('click',()=>{const r=state.running;if(r&&finishHold&&r.pausedAt){r.paused+=Date.now()-r.pausedAt;r.pausedAt=null}finishOpen=false;finishHold=false;save();renderSessionsPage()});
+$('#sDiscard').addEventListener('click',ev=>{
+  const b=ev.currentTarget;
+  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to discard';setTimeout(()=>{b.classList.remove('armed');b.textContent='Discard'},3500);return}
+  b.classList.remove('armed');b.textContent='Discard';
+  state.running=null;finishOpen=false;save();render();renderSessionsPage();toast('Session discarded');
+});
+$('#recFinish').addEventListener('submit',ev=>{
+  ev.preventDefault();const r=state.running;if(!r)return;
+  const h=$('#fHint'),v=parseInt($('#fWords').value,10);
+  if(isNaN(v)||v<0){h.textContent='Enter how many words you wrote (0 or more).';h.classList.add('err');$('#fWords').focus();return}
+  h.classList.remove('err');h.textContent='';
+  const secs=Math.round(runElapsed());
+  const res=makeSession({date:keyOf(new Date(r.start)),start:r.start,dur:secs,words:v,note:$('#fNote').value.trim(),add:$('#fAdd').checked});
+  state.running=null;finishOpen=false;finishHold=false;$('#fWords').value='';$('#fNote').value='';
+  save();render();renderSessionsPage();
+  sessToast(res,`Saved ${dur(secs)} session${v?` · ${fmt(v)} words`:''}`);
+});
+$('#manForm').addEventListener('submit',ev=>{
+  ev.preventDefault();const h=$('#mHint');h.classList.add('err');
+  const date=$('#mDate').value,tm=$('#mTime').value,mins=parseInt($('#mMin').value,10),v=parseInt($('#mWords').value,10)||0;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}/.test(tm)){h.textContent='Pick a date and a start time.';return}
+  if(!(mins>=1)){h.textContent='Enter how many minutes you wrote.';$('#mMin').focus();return}
+  if(v<0){h.textContent='Words can’t be negative.';return}
+  const a=date.split('-').map(Number),b=tm.split(':').map(Number);
+  const start=new Date(a[0],a[1]-1,a[2],b[0],b[1]).getTime();
+  const res=makeSession({date,start,dur:mins*60,words:v,note:$('#mNote').value.trim(),add:$('#mAdd').checked});
+  h.classList.remove('err');h.textContent='';$('#mMin').value='';$('#mWords').value='';$('#mNote').value='';
+  save();render();sessToast(res,`Added ${dur(mins*60)} session${v?` · ${fmt(v)} words`:''}`);
+});
+$('#sessList').addEventListener('click',ev=>{
+  if(ev.target.closest('#sMoreBtn')){showAllSess=!showAllSess;renderSessList();return}
+  const b=ev.target.closest('[data-sdel]');if(!b)return;
+  if(!b.classList.contains('armed')){document.querySelectorAll('#sessList .xbtn.armed').forEach(x=>{x.classList.remove('armed');x.textContent='Delete'});
+    b.classList.add('armed');b.textContent='Confirm';setTimeout(()=>{if(b.isConnected){b.classList.remove('armed');b.textContent='Delete'}},3500);return}
+  const idx=state.sessions.findIndex(x=>x.id===b.dataset.sdel);if(idx<0)return;
+  const [gone]=state.sessions.splice(idx,1);let ge=null;
+  if(gone.eid){const ei=state.entries.findIndex(x=>x.id===gone.eid);if(ei>=0)ge=state.entries.splice(ei,1)[0]}
+  save();render();
+  toast(`Deleted ${dur(gone.dur)} session${ge?' and its words':''}`,()=>{state.sessions.push(gone);if(ge)state.entries.push(ge)});
+});
+$('#sessReset').addEventListener('click',ev=>{
+  const b=ev.currentTarget;
+  if(!b.classList.contains('armed')){b.classList.add('armed');b.textContent='Tap again to erase the log';setTimeout(()=>{b.classList.remove('armed');b.textContent='Erase session log'},4000);return}
+  const prev=state.sessions;state.sessions=[];save();render();b.classList.remove('armed');b.textContent='Erase session log';
+  toast('Session log erased (your word totals are untouched)',()=>{state.sessions=prev});
+});
+
+/* ---------- page routing ---------- */
+let page=/^#sessions$/.test(location.hash)?'sessions':'tracker';
+function applyPage(){
+  $('#pageTracker').hidden=page!=='tracker';$('#pageSessions').hidden=page!=='sessions';
+  $('#tabTracker').setAttribute('aria-current',page==='tracker'?'page':'false');
+  $('#tabSessions').setAttribute('aria-current',page==='sessions'?'page':'false');
+  render();syncTick();
+}
+function go(p){page=p;try{location.hash=p}catch(e){}applyPage();window.scrollTo(0,0)}
+$('#tabTracker').addEventListener('click',ev=>{ev.preventDefault();go('tracker')});
+$('#tabSessions').addEventListener('click',ev=>{ev.preventDefault();go('sessions')});
+window.addEventListener('hashchange',()=>{const p=/^#sessions$/.test(location.hash)?'sessions':'tracker';if(p!==page){page=p;applyPage()}});
+
 /* resize */
-let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{const m=compute();drawCumulative(m);drawDaily(m)},150)});
+let rt; window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{const m=compute();drawCumulative(m);drawDaily(m);if(page==='sessions')drawSessChart()},150)});
 
 /* init */
-$('#dateIn').value=todayKey();
-fillSettings(); render();
+$('#dateIn').value=todayKey();$('#mDate').value=todayKey();$('#mTime').value=hm(Date.now());
+fillSettings(); applyPage();
 })();
 </script>
 
