@@ -327,7 +327,7 @@ details.sect>summary{cursor:pointer;font-weight:600;font-size:14px}
             <div class="clockface num" id="sClock">00:00</div>
             <div class="sub" id="sSub"></div>
           </div>
-          <div class="row" id="recIdle"><button class="btn primary" type="button" id="sStart">Start session</button></div>
+          <div class="row" id="recIdle"><button class="btn primary" type="button" id="recStartBtn">Start session</button></div>
           <div class="row" id="recRun" hidden>
             <button class="btn" type="button" id="sPause">Pause</button>
             <button class="btn primary" type="button" id="sFinish">Finish</button>
@@ -867,7 +867,7 @@ function makeSession(o){
 }
 function sessToast(r,msg){toast(msg,()=>{state.sessions=state.sessions.filter(x=>x.id!==r.s.id);if(r.e)state.entries=state.entries.filter(x=>x.id!==r.e.id)})}
 
-$('#sStart').addEventListener('click',()=>{state.running={start:Date.now(),paused:0,pausedAt:null};finishOpen=false;save();render();renderSessionsPage()});
+$('#recStartBtn').addEventListener('click',()=>{state.running={start:Date.now(),paused:0,pausedAt:null};finishOpen=false;save();render();renderSessionsPage()});
 $('#sPause').addEventListener('click',()=>{const r=state.running;if(!r)return;if(r.pausedAt){r.paused+=Date.now()-r.pausedAt;r.pausedAt=null}else r.pausedAt=Date.now();save();renderSessionsPage()});
 $('#sFinish').addEventListener('click',()=>{const r=state.running;if(!r)return;finishHold=!r.pausedAt;if(!r.pausedAt)r.pausedAt=Date.now();finishOpen=true;save();renderSessionsPage();$('#fWords').focus()});
 $('#fBack').addEventListener('click',()=>{const r=state.running;if(r&&finishHold&&r.pausedAt){r.paused+=Date.now()-r.pausedAt;r.pausedAt=null}finishOpen=false;finishHold=false;save();renderSessionsPage()});
